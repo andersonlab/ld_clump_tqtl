@@ -1,0 +1,3 @@
+# Config for LD clumping of variants for TensorQTL
+vcf: "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/data/genotypes/eQTL_genotypes_march_2024/CCF_OTAR-plates_12345_imputed_allchr-no_rsid_expr_filt.vcf.gz"
+ldthresh: 0.8
