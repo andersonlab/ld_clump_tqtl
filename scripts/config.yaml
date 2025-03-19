@@ -1,3 +1,6 @@
 # Config for LD clumping of variants for TensorQTL
 vcf: "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/data/genotypes/eQTL_genotypes_march_2024/CCF_OTAR-plates_12345_imputed_allchr-no_rsid_expr_filt.vcf.gz"
+gene_variant_input: "input/variants_per_gene_list.txt"
+gene_input: "input/gene_list_test.txt"
 ldthresh: 0.8
+outdir: "results"

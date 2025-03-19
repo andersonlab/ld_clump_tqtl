@@ -9,7 +9,7 @@ library(ggpubr)
 # Get paths
 repo.dir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/code/IBDVerse-sc-eQTL-code/'
 sumstats.all.basedir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2024_12_31-multi_tissue_base_results/TensorQTL_eQTLS/'
-out.dir <- 'input/per_gene'
+out.dir <- 'input'
 data.dir <- paste0(repo.dir,'/data/')
 coloc.dir <- "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/bradley_analysis/scripts/scRNAseq/snakemake_colocalisation/results/2025_03_IBDverse_coloc_all_gwas/collapsed/"
 source(paste0(repo.dir,'qtl_plot/helper_functions.R'))
@@ -60,7 +60,7 @@ coloc_gene_leads = colocs_all %>%
 
 
 ##################
-# Combine these together, save a per gene file as well as a summary of the genes
+# Combine these together, saveas well as a summary of the genes
 ##################
 coqtl = coloc_gene_leads %>% 
     bind_rows(qtl_gene_leads) %>% 
@@ -68,13 +68,9 @@ coqtl = coloc_gene_leads %>%
     rename(SNP = variant_id) %>% 
     select(phenotype_id, SNP, P)
 
-# summary
+# summary_genes
 write.table(coqtl %>% pull(phenotype_id) %>% unique(), paste0(out.dir, "/gene_list.txt"), col.names=F, row.names=F, quote=F)
-
-for(g in unique(coqtl$phenotype_id)){
-    write.table(coqtl %>% 
-        filter(phenotype_id == g)
-    , paste0(out.dir, "/", g, "_variants_to_clump.txt"), row.names=F, quote=F, sep = "\t")
-}
+# variants per gene
+write.table(coqtl, paste0(out.dir, "/variants_per_gene_list.txt"), col.names=T, row.names=F, quote=F, sep = "\t")
 
 
