@@ -1,6 +1,7 @@
 # Config for LD clumping of variants for TensorQTL
-vcf: "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/data/genotypes/eQTL_genotypes_march_2024/CCF_OTAR-plates_12345_imputed_allchr-no_rsid_expr_filt.vcf.gz"
+plink_prefix: "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/data/genotypes/eQTL_genotypes_march_2024/plink_march_2025/plink_geno_chr" # Path (up to chr) for per chromosome plink files
+plink_suffix: "_plink" # Any suffix between chromosome and .bim/bed/fam
 gene_variant_input: "input/variants_per_gene_list.txt"
-gene_input: "input/gene_list_test.txt"
+gene_input: "input/gene_list.txt"
 ldthresh: 0.8
 outdir: "results"

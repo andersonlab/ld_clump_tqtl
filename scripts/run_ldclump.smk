@@ -14,43 +14,33 @@ rule run_LD_clump:
     output:
         "{outdir}/per_gene/{gene}_clumped_format.txt" 
     params:
-        vcf=config["vcf"],
+        plink_prefix=config["plink_prefix"],
+        plink_suffix=config["plink_suffix"],
         outdir=config["outdir"],
         ldthresh=config["ldthresh"],
         gene_variant_input=config["gene_variant_input"]
     threads: 1
     singularity:
-        "/software/hgi/softpack/installs/groups/team166//BGE_pipelines/1-scripts/singularity.sif"
+        "/software/hgi/softpack/installs/groups/macromapsqtl//macromapsqtl/4-scripts/singularity.sif"
     shell:
         r"""
             # Make out dir
             mkdir -p {params.outdir}/per_gene
 
-            # Extract the variants of interest from the vcf. Put in temporary file
+            # Extract the variants of interest from the gene x variant list. Put in temporary file
             awk -v g="{wildcards.gene}" '$1 == g' {params.gene_variant_input} | awk '{{print $2}}' > temp/{wildcards.gene}_variants.txt
 
-            # Check how many variants, if >2 clump
+            # Check how many variants, if >1 clump
             num_lines=$(wc -l < temp/{wildcards.gene}_variants.txt)
 
             if [ "$num_lines" -gt 1 ]; then
 
-                echo ".. ~~~~~~~ > 1 variants for this gene, LD clumping ~~~~~~~"
-                echo "..Getting variants from vcf"
-                # Get header
-                bcftools view -h {params.vcf} > temp/{wildcards.gene}_filtered_variants.vcf
-                
-                # Filter vcf for these variants
-                awk '{{print $1}}' temp/{wildcards.gene}_variants.txt | grep -f - <(zcat {params.vcf}) >> temp/{wildcards.gene}_filtered_variants.vcf
+                echo ".. ~~~~~~~ " $num_lines "variants for this gene, LD clumping ~~~~~~~"
+                echo "..Getting chromosome number"
+                num_chr=$(awk -F':' 'NR==1 {{gsub("chr", "", $1); print $1}}' temp/{wildcards.gene}_variants.txt)
 
-                # Index vcf after filtering
-                echo "..Zipping"
-                bgzip temp/{wildcards.gene}_filtered_variants.vcf
-                echo "..Indexing"
-                bcftools index temp/{wildcards.gene}_filtered_variants.vcf.gz
-
-                # Convert to plink
-                echo "..Plink converting"
-                plink --vcf temp/{wildcards.gene}_filtered_variants.vcf.gz --make-bed --out temp/{wildcards.gene}
+                echo "..Filtering plink files"
+                plink --bfile {params.plink_prefix}${{num_chr}}{params.plink_suffix} --extract temp/{wildcards.gene}_variants.txt --make-bed --out temp/{wildcards.gene}
 
                 # Get the specific sumstats for this gene
                 echo "..Getting specific gene x variant pairs"

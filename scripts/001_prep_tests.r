@@ -13,7 +13,6 @@ out.dir <- 'input'
 data.dir <- paste0(repo.dir,'/data/')
 coloc.dir <- "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/bradley_analysis/scripts/scRNAseq/snakemake_colocalisation/results/2025_03_IBDverse_coloc_all_gwas/collapsed/"
 source(paste0(repo.dir,'qtl_plot/helper_functions.R'))
-source(paste0('qtl_plot/pleitropy_helpers.r'))
 
 # Make outdirs
 if(!file.exists(out.dir)){
@@ -27,8 +26,24 @@ sumstat.df <- read_eqtls(sumstats.all.basedir)
 sig.sumstat.df <- sumstat.df %>% 
   filter(qval < 0.05) 
 
+# Get sig gene x condition pairs
+sig.gene.condition = sig.sumstat.df %>% 
+    mutate(pheno_annotation = paste0(phenotype_id, "-", annotation)) %>% 
+    pull(pheno_annotation) %>% 
+    unique()
+
+length(sig.gene.condition) #252389
+
+##################
+# Read in conditional eQTLs and prep
+##################
+cond.sumstat.df <- read_conditional_eqtls(sumstats.all.basedir)
+cond.sumstat.df <- cond.sumstat.df %>% 
+    mutate(pheno_annotation = paste0(phenotype_id, "-", annotation))
+
 # get a unique list of phenotype IDs and variants
-qtl_gene_leads = sig.sumstat.df %>% 
+qtl_gene_leads = cond.sumstat.df %>% 
+    filter(pheno_annotation %in% sig.gene.condition) %>% 
     group_by(variant_id, phenotype_id) %>% 
     summarise(
         P=min(pval_nominal) # Not interested in whether the same gene-snp pair is more/less significant in different conditions
@@ -67,6 +82,8 @@ coqtl = coloc_gene_leads %>%
     arrange(phenotype_id, variant_id, P) %>% 
     rename(SNP = variant_id) %>% 
     select(phenotype_id, SNP, P)
+
+nrow(coqtl) # OLD=132742
 
 # summary_genes
 write.table(coqtl %>% pull(phenotype_id) %>% unique(), paste0(out.dir, "/gene_list.txt"), col.names=F, row.names=F, quote=F)

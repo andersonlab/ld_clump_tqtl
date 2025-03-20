@@ -19,7 +19,6 @@ workdir=${PWD}
 module load HGI/common/snakemake/7
 module load ISG/singularity/3.11.4
 which singularity
-echo $PATH
 
 
 # Copy config to results
