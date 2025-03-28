@@ -1,14 +1,9 @@
 # Bradley March 2025
-library(ggrepel)
-library(shadowtext)
-library(patchwork)
 library(tidyverse)
-library(forcats)
-library(ggpubr)
 
 # Get paths
 repo.dir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/code/IBDVerse-sc-eQTL-code/'
-sumstats.all.basedir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2024_12_31-multi_tissue_base_results/TensorQTL_eQTLS/'
+sumstats.all.basedir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2025_03_20-multi_tissue_base_results/TensorQTL_eQTLS/'
 out.dir <- 'input'
 data.dir <- paste0(repo.dir,'/data/')
 coloc.dir <- "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/bradley_analysis/scripts/scRNAseq/snakemake_colocalisation/results/2025_03_IBDverse_coloc_all_gwas/collapsed/"
@@ -32,7 +27,7 @@ sig.gene.condition = sig.sumstat.df %>%
     pull(pheno_annotation) %>% 
     unique()
 
-length(sig.gene.condition) #252389
+length(sig.gene.condition) # 330504
 
 ##################
 # Read in conditional eQTLs and prep
@@ -81,9 +76,9 @@ coqtl = coloc_gene_leads %>%
     bind_rows(qtl_gene_leads) %>% 
     arrange(phenotype_id, variant_id, P) %>% 
     rename(SNP = variant_id) %>% 
-    select(phenotype_id, SNP, P)
+    select(phenotype_id, SNP, P, type)
 
-nrow(coqtl) # OLD=132742
+nrow(coqtl) # pre add coloc=206708
 
 # summary_genes
 write.table(coqtl %>% pull(phenotype_id) %>% unique(), paste0(out.dir, "/gene_list.txt"), col.names=F, row.names=F, quote=F)
