@@ -28,7 +28,7 @@ rule run_LD_clump:
             mkdir -p {params.outdir}/per_gene
 
             # Extract the variants of interest from the gene x variant list. Put in temporary file
-            awk -v g="{wildcards.gene}" '$1 == g' {params.gene_variant_input} | awk '{{print $2}}' > temp/{wildcards.gene}_variants.txt
+            awk -v g="{wildcards.gene}" '$1 == g' {params.gene_variant_input} | awk '{{print $2}}' | uniq > temp/{wildcards.gene}_variants.txt
 
             # Check how many variants, if >1 clump
             num_lines=$(wc -l < temp/{wildcards.gene}_variants.txt)

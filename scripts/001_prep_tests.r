@@ -4,9 +4,11 @@ library(tidyverse)
 # Get paths
 repo.dir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/code/IBDVerse-sc-eQTL-code/'
 sumstats.all.basedir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2025_03_20-multi_tissue_base_results/TensorQTL_eQTLS/'
+sumstats.interaction.basedir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2025_03_26-multi_tissue_interaction_results/TensorQTL_eQTLS/'
 out.dir <- 'input'
 data.dir <- paste0(repo.dir,'/data/')
 coloc.dir <- "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/bradley_analysis/scripts/scRNAseq/snakemake_colocalisation/results/2025_03_IBDverse_coloc_all_gwas/collapsed/"
+int.coloc.dir <- "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/results/coloc/2025_03_IBDverse_coloc_interaction_all_gwas/collapsed"
 source(paste0(repo.dir,'qtl_plot/helper_functions.R'))
 
 # Make outdirs
@@ -47,6 +49,29 @@ qtl_gene_leads = cond.sumstat.df %>%
         type="eQTL"
     )
 
+# Load in interaction eQTLs
+interactions = read_ieqtls(sumstats.interaction.basedir) %>% 
+    filter(
+        pval_adj_bh < 0.05
+    ) %>% 
+    mutate(
+        variant_id = factor(variant_id, levels=unique(variant_id)),
+        interaction_new = interaction.mapping[interaction]
+    )
+
+int_gene_leads = interactions %>%
+    group_by(variant_id, phenotype_id) %>%
+    filter(pval_adj_bh < 0.05) %>%  
+    summarise(
+        P=min(pval_adj_bh)
+    ) %>% 
+    mutate(
+        type="interaction_eQTL"
+    )
+
+# Add this
+qtl_gene_leads = qtl_gene_leads %>% bind_rows(int_gene_leads)
+
 ##################
 # Read in colocs and prep
 ##################
@@ -68,6 +93,25 @@ coloc_gene_leads = colocs_all %>%
         type="coloc"
     )
 
+# Interactions: 
+int_colocs_all = get_colocs(int.coloc.dir, known_ibd_only = F) %>% 
+    filter(
+        !(gwas_trait %in% c("ibd", "cd", "uc")),
+        PP.H4.abf > 0.75
+    )
+
+int_coloc_gene_leads = int_colocs_all %>% 
+    mutate(variant_id = gsub("\\_", "\\:", snp_id)) %>% 
+    group_by(variant_id, phenotype_id) %>% 
+    summarise(
+        P=min(qtl_pval) # Not interested in whether the same gene-snp pair is more/less significant in different conditions
+    ) %>% 
+    mutate(
+        type="interaction_coloc"
+    )
+
+# Combine
+coloc_gene_leads = coloc_gene_leads %>% bind_rows(int_coloc_gene_leads)
 
 ##################
 # Combine these together, saveas well as a summary of the genes
@@ -78,11 +122,9 @@ coqtl = coloc_gene_leads %>%
     rename(SNP = variant_id) %>% 
     select(phenotype_id, SNP, P, type)
 
-nrow(coqtl) # pre add coloc=206708
+nrow(coqtl) # pre add coloc=206708. With interaction eQTL and interaction coloc = 207852
 
 # summary_genes
 write.table(coqtl %>% pull(phenotype_id) %>% unique(), paste0(out.dir, "/gene_list.txt"), col.names=F, row.names=F, quote=F)
 # variants per gene
 write.table(coqtl, paste0(out.dir, "/variants_per_gene_list.txt"), col.names=T, row.names=F, quote=F, sep = "\t")
-
-

@@ -3,5 +3,5 @@ plink_prefix: "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/data/genotypes/eQT
 plink_suffix: "_plink" # Any suffix between chromosome and .bim/bed/fam
 gene_variant_input: "input/variants_per_gene_list.txt"
 gene_input: "input/gene_list.txt"
-ldthresh: 0.8
+ldthresh: 0.5
 outdir: "results"
