@@ -47,7 +47,7 @@ qtl_gene_leads = cond.sumstat.df %>%
     ) %>% 
     mutate(
         type="eQTL"
-    )
+    ) # 196657
 
 # Load in interaction eQTLs
 interactions = read_ieqtls(sumstats.interaction.basedir) %>% 
@@ -70,7 +70,11 @@ int_gene_leads = interactions %>%
     )
 
 # Add this
-qtl_gene_leads = qtl_gene_leads %>% bind_rows(int_gene_leads)
+qtl_gene_leads = qtl_gene_leads %>% bind_rows(int_gene_leads) %>% 
+    group_by(variant_id, phenotype_id) %>% 
+    slice_min(P) %>% 
+    distinct() # 197,770
+
 
 ##################
 # Read in colocs and prep
@@ -91,7 +95,7 @@ coloc_gene_leads = colocs_all %>%
     ) %>% 
     mutate(
         type="coloc"
-    )
+    ) # 10,051
 
 # Interactions: 
 int_colocs_all = get_colocs(int.coloc.dir, known_ibd_only = F) %>% 
@@ -108,21 +112,30 @@ int_coloc_gene_leads = int_colocs_all %>%
     ) %>% 
     mutate(
         type="interaction_coloc"
-    )
+    ) # 16
 
 # Combine
-coloc_gene_leads = coloc_gene_leads %>% bind_rows(int_coloc_gene_leads)
+coloc_gene_leads = coloc_gene_leads %>% bind_rows(int_coloc_gene_leads) %>% 
+    group_by(variant_id, phenotype_id) %>% 
+    slice_min(P) %>% 
+    distinct() # 10,067
 
 ##################
 # Combine these together, saveas well as a summary of the genes
 ##################
 coqtl = coloc_gene_leads %>% 
     bind_rows(qtl_gene_leads) %>% 
+    group_by(variant_id, phenotype_id) %>% 
+    slice_min(P) %>% 
+    distinct() %>% 
     arrange(phenotype_id, variant_id, P) %>% 
     rename(SNP = variant_id) %>% 
     select(phenotype_id, SNP, P, type)
 
-nrow(coqtl) # pre add coloc=206708. With interaction eQTL and interaction coloc = 207852
+nrow(coqtl) # 198045
+
+#            coloc              eQTL interaction_coloc  interaction_eQTL 
+#             4784            192148                16              1097
 
 # summary_genes
 write.table(coqtl %>% pull(phenotype_id) %>% unique(), paste0(out.dir, "/gene_list.txt"), col.names=F, row.names=F, quote=F)
