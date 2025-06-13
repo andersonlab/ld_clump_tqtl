@@ -2,13 +2,13 @@
 library(tidyverse)
 
 # Get paths
-repo.dir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/code/IBDVerse-sc-eQTL-code/'
-sumstats.all.basedir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2025_03_20-multi_tissue_base_results/TensorQTL_eQTLS/'
-sumstats.interaction.basedir <- '/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2025_03_26-multi_tissue_interaction_results/TensorQTL_eQTLS/'
+repo.dir <- '../IBDVerse-sc-eQTL-code/'
+sumstats.all.basedir <- "/lustre/scratch127/humgen/projects_v2/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2025_06_11-multi_tissue_base_results/TensorQTL_eQTLS/" # Specify target path for the pipeline
+sumstats.interaction.basedir <- '/lustre/scratch127/humgen/projects_v2/sc-eqtl-ibd/analysis/tobi_qtl_analysis/repos/nf-hgi_qtlight/2025_06_12-multi_tissue_interaction_results/TensorQTL_eQTLS/'
 out.dir <- 'input'
 data.dir <- paste0(repo.dir,'/data/')
-coloc.dir <- "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/bradley_analysis/scripts/scRNAseq/snakemake_colocalisation/results/2025_03_IBDverse_coloc_all_gwas/collapsed/"
-int.coloc.dir <- "/lustre/scratch126/humgen/projects/sc-eqtl-ibd/analysis/tobi_qtl_analysis/results/coloc/2025_03_IBDverse_coloc_interaction_all_gwas/collapsed"
+coloc.dir <- "/lustre/scratch127/humgen/projects_v2/sc-eqtl-ibd/analysis/bradley_analysis/IBDverse/snakemake_coloc/results/2025_06_11_IBDverse_coloc_all_gwas/collapsed/"
+int.coloc.dir <- "/lustre/scratch127/humgen/projects_v2/sc-eqtl-ibd/analysis/tobi_qtl_analysis/results/coloc/IBDverse-multi_tissue_interaction_2025/collapsed"
 source(paste0(repo.dir,'qtl_plot/helper_functions.R'))
 
 # Make outdirs
@@ -29,7 +29,7 @@ sig.gene.condition = sig.sumstat.df %>%
     pull(pheno_annotation) %>% 
     unique()
 
-length(sig.gene.condition) # 330504
+length(sig.gene.condition) # 334743
 
 ##################
 # Read in conditional eQTLs and prep
@@ -47,7 +47,7 @@ qtl_gene_leads = cond.sumstat.df %>%
     ) %>% 
     mutate(
         type="eQTL"
-    ) # 196657
+    ) # 194233
 
 # Load in interaction eQTLs
 interactions = read_ieqtls(sumstats.interaction.basedir) %>% 
@@ -73,18 +73,15 @@ int_gene_leads = interactions %>%
 qtl_gene_leads = qtl_gene_leads %>% bind_rows(int_gene_leads) %>% 
     group_by(variant_id, phenotype_id) %>% 
     slice_min(P) %>% 
-    distinct() # 197,770
+    distinct() # 195,296
 
 
 ##################
 # Read in colocs and prep
 ##################
 
-colocs_all = get_colocs(coloc.dir, known_ibd_only = F) %>% 
-    filter(
-        !(gwas_trait %in% c("ibd", "cd", "uc")),
-        PP.H4.abf > 0.75
-    )
+colocs_all = get_colocs(coloc.dir, known_ibd_only = T)  %>% # All are IBD/CD/UC
+    filter(PP.H4.abf > 0.75) # 6051
 
 # get a unique list of phenotype IDs and variants
 coloc_gene_leads = colocs_all %>% 
@@ -95,12 +92,11 @@ coloc_gene_leads = colocs_all %>%
     ) %>% 
     mutate(
         type="coloc"
-    ) # 10,051
+    ) # 1,714
 
 # Interactions: 
-int_colocs_all = get_colocs(int.coloc.dir, known_ibd_only = F) %>% 
+int_colocs_all = get_colocs(int.coloc.dir, known_ibd_only = T) %>% 
     filter(
-        !(gwas_trait %in% c("ibd", "cd", "uc")),
         PP.H4.abf > 0.75
     )
 
@@ -112,13 +108,13 @@ int_coloc_gene_leads = int_colocs_all %>%
     ) %>% 
     mutate(
         type="interaction_coloc"
-    ) # 16
+    ) # 6
 
 # Combine
 coloc_gene_leads = coloc_gene_leads %>% bind_rows(int_coloc_gene_leads) %>% 
     group_by(variant_id, phenotype_id) %>% 
     slice_min(P) %>% 
-    distinct() # 10,067
+    distinct() # 1720
 
 ##################
 # Combine these together, saveas well as a summary of the genes
@@ -132,10 +128,10 @@ coqtl = coloc_gene_leads %>%
     rename(SNP = variant_id) %>% 
     select(phenotype_id, SNP, P, type)
 
-nrow(coqtl) # 198045
-
+nrow(coqtl) # 195321
+table(coqtl$type)
 #            coloc              eQTL interaction_coloc  interaction_eQTL 
-#             4784            192148                16              1097
+#             763            193495                6              1057
 
 # summary_genes
 write.table(coqtl %>% pull(phenotype_id) %>% unique(), paste0(out.dir, "/gene_list.txt"), col.names=F, row.names=F, quote=F)

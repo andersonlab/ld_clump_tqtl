@@ -26,6 +26,7 @@ rule run_LD_clump:
         r"""
             # Make out dir
             mkdir -p {params.outdir}/per_gene
+            mkdir -p temp
 
             # Extract the variants of interest from the gene x variant list. Put in temporary file
             awk -v g="{wildcards.gene}" '$1 == g' {params.gene_variant_input} | awk '{{print $2}}' | uniq > temp/{wildcards.gene}_variants.txt
