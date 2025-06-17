@@ -29,7 +29,7 @@ sig.gene.condition = sig.sumstat.df %>%
     pull(pheno_annotation) %>% 
     unique()
 
-length(sig.gene.condition) # 334743
+length(sig.gene.condition) # 329996
 
 ##################
 # Read in conditional eQTLs and prep
@@ -40,14 +40,17 @@ cond.sumstat.df <- cond.sumstat.df %>%
 
 # get a unique list of phenotype IDs and variants
 qtl_gene_leads = cond.sumstat.df %>% 
-    filter(pheno_annotation %in% sig.gene.condition) %>% 
+    filter(
+        pheno_annotation %in% sig.gene.condition,
+        pval_perm < 0.05
+    ) %>% 
     group_by(variant_id, phenotype_id) %>% 
     summarise(
         P=min(pval_nominal) # Not interested in whether the same gene-snp pair is more/less significant in different conditions
     ) %>% 
     mutate(
         type="eQTL"
-    ) # 194233
+    ) # 188854
 
 # Load in interaction eQTLs
 interactions = read_ieqtls(sumstats.interaction.basedir) %>% 
@@ -73,7 +76,7 @@ int_gene_leads = interactions %>%
 qtl_gene_leads = qtl_gene_leads %>% bind_rows(int_gene_leads) %>% 
     group_by(variant_id, phenotype_id) %>% 
     slice_min(P) %>% 
-    distinct() # 195,296
+    distinct() # 189,919
 
 
 ##################
@@ -128,10 +131,10 @@ coqtl = coloc_gene_leads %>%
     rename(SNP = variant_id) %>% 
     select(phenotype_id, SNP, P, type)
 
-nrow(coqtl) # 195321
+nrow(coqtl) # 189946
 table(coqtl$type)
 #            coloc              eQTL interaction_coloc  interaction_eQTL 
-#             763            193495                6              1057
+#             763            188118                6              1059
 
 # summary_genes
 write.table(coqtl %>% pull(phenotype_id) %>% unique(), paste0(out.dir, "/gene_list.txt"), col.names=F, row.names=F, quote=F)
